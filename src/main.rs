@@ -1,10 +1,9 @@
 #![allow(non_snake_case)]
 use anyhow::Result;
-
-mod cli;
 use cli::{cli, SetLogLevel};
 mod file_renamer;
 use file_renamer::RenameFiles;
+mod cli;
 mod tagedit;
 
 fn main() -> Result<()> {

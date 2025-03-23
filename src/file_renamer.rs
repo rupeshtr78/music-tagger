@@ -29,9 +29,8 @@ pub fn RenameFiles(path: &str, file_type: &str, current: &str, new: &str) -> Res
             continue;
         }
 
-        let re = Regex::new(current).with_context(|| "Failed to create regex")?;
-
         // regexp match a string and replace it with another string
+        let re = Regex::new(current).with_context(|| "Failed to create regex")?;
 
         if !re.is_match(file_name) {
             warn!(
@@ -40,15 +39,7 @@ pub fn RenameFiles(path: &str, file_type: &str, current: &str, new: &str) -> Res
             );
             continue;
         }
-        // if !file_name.contains(current) {
-        //     warn!(
-        //         "File name does not contain current {} string: {}",
-        //         current, file_name
-        //     );
-        //     continue;
-        // }
         let new_name = file_name.to_string().replace(current, new);
-
         info!("Renaming file: {} to {}", file_name, new_name);
 
         rename(&path, path.with_file_name(new_name))
