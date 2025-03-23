@@ -1,9 +1,9 @@
-use ::clap::Command;
 use anyhow::{Context, Result};
-use clap::Arg;
+use clap::{Arg, ArgMatches, Command};
+use dialoguer::{Input, Select};
 
 #[derive(Debug)]
-pub struct CliArgs {
+pub struct RenameCommandArgs {
     pub path: String,
     pub file_type: String,
     pub current: String,
@@ -11,19 +11,27 @@ pub struct CliArgs {
     pub loglevel: String,
 }
 
-pub fn cli() -> Result<CliArgs> {
-    let matches = Command::new("mp3-rename")
+pub fn cli() -> Result<RenameCommandArgs> {
+    let matches = Command::new("file-rename")
         .version("0.1.0")
         .author("Rupesh Raghavam <rupeshtr78@example.com>")
-        .about("Renames files in a directory matching string");
-    let matches = matches
+        .about("Renames files in a directory matching string")
+        .arg(
+            Arg::new("interactive")
+                .short('i')
+                .long("interactive")
+                .value_name("INTERACTIVE")
+                .help("Use interactive mode")
+                .default_value("false")
+                .action(clap::ArgAction::Set),
+        )
         .arg(
             Arg::new("path")
                 .short('p')
                 .long("path")
                 .value_name("PATH")
-                .help("Path to the directory containing mp3 files")
-                .required(true),
+                .help("Path to the directory containing files")
+                .required_unless_present("interactive"),
         )
         .arg(
             Arg::new("file_type")
@@ -31,7 +39,7 @@ pub fn cli() -> Result<CliArgs> {
                 .long("file_type")
                 .value_name("FILE_TYPE")
                 .help("File type to rename")
-                .required(true),
+                .required_unless_present("interactive"),
         )
         .arg(
             Arg::new("current")
@@ -39,7 +47,7 @@ pub fn cli() -> Result<CliArgs> {
                 .long("current")
                 .value_name("CURRENT")
                 .help("Current string to replace")
-                .required(true),
+                .required_unless_present("interactive"),
         )
         .arg(
             Arg::new("new")
@@ -54,34 +62,50 @@ pub fn cli() -> Result<CliArgs> {
                 .short('l')
                 .long("loglevel")
                 .help("Set log level")
-                .default_value("info") // Default to "false" if the flag is not provided
-                .action(clap::ArgAction::Set), // Allow the flag to take a value
+                .default_value("info")
+                .action(clap::ArgAction::Set),
         )
         .get_matches();
 
-    // Get the values of the arguments
-    let path = matches
-        .get_one::<String>("path")
-        .context("Failed to get path")?
-        .to_string();
-    let file_type = matches
-        .get_one::<String>("file_type")
-        .context("Failed to get file_type")?
-        .to_string();
-    let current = matches
-        .get_one::<String>("current")
-        .context("Failed to get current string")?
-        .to_string();
-    let new = matches
-        .get_one::<String>("new")
-        .context("Failed to get new")?
-        .to_string();
-    let loglevel = matches
-        .get_one::<String>("loglevel")
-        .context("Failed to get loglevel")?
-        .to_string();
+    let interactive = matches
+        .get_one::<String>("interactive")
+        .context("Failed to get interactive flag")?
+        .parse::<bool>()
+        .context("Failed to parse interactive flag")?;
 
-    Ok(CliArgs {
+    match interactive {
+        true => cli_dialog(),
+        false => cli_commands(matches),
+    }
+}
+
+fn cli_dialog() -> Result<RenameCommandArgs> {
+    let path = Input::new()
+        .with_prompt("Enter the path to the directory containing files")
+        .interact_text()?;
+
+    let file_type = Input::new()
+        .with_prompt("Enter the file type to rename")
+        .interact_text()?;
+
+    let current = Input::new()
+        .with_prompt("Enter the current string to replace")
+        .interact_text()?;
+
+    let new = Input::new()
+        .with_prompt("Enter the new string to replace with")
+        .allow_empty(true)
+        .interact_text()?;
+
+    let loglevel_options = vec!["info", "debug", "error", "warn"];
+    let loglevel_index = Select::new()
+        .with_prompt("Choose a log level")
+        .items(&loglevel_options)
+        .default(loglevel_options.iter().position(|&x| x == "info").unwrap())
+        .interact()?;
+    let loglevel = loglevel_options[loglevel_index].to_string();
+
+    Ok(RenameCommandArgs {
         path,
         file_type,
         current,
@@ -90,13 +114,39 @@ pub fn cli() -> Result<CliArgs> {
     })
 }
 
-pub fn SetLogLevel() {
-    let args = cli().unwrap();
-    let level = args.loglevel.as_str();
+fn cli_commands(matches: ArgMatches) -> Result<RenameCommandArgs> {
+    Ok(RenameCommandArgs {
+        path: matches
+            .get_one::<String>("path")
+            .context("Missing path")?
+            .to_string(),
+        file_type: matches
+            .get_one::<String>("file_type")
+            .context("Missing file type")?
+            .to_string(),
+        current: matches
+            .get_one::<String>("current")
+            .context("Missing current string")?
+            .to_string(),
+        new: matches
+            .get_one::<String>("new")
+            .context("Missing new string")?
+            .to_string(),
+        loglevel: matches
+            .get_one::<String>("loglevel")
+            .context("Missing log level")?
+            .to_string(),
+    })
+}
+
+pub fn SetLogLevel(level: &str) -> Result<()> {
     match level {
-        "info" => simple_logger::init_with_level(log::Level::Info).unwrap(),
-        "debug" => simple_logger::init_with_level(log::Level::Debug).unwrap(),
-        "error" => simple_logger::init_with_level(log::Level::Error).unwrap(),
-        _ => simple_logger::init_with_level(log::Level::Warn).unwrap(),
+        "info" => simple_logger::init_with_level(log::Level::Info),
+        "debug" => simple_logger::init_with_level(log::Level::Debug),
+        "error" => simple_logger::init_with_level(log::Level::Error),
+        _ => simple_logger::init_with_level(log::Level::Warn),
     }
+    .context("Failed to initialize logger")?;
+
+    Ok(())
 }

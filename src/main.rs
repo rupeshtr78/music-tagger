@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 use anyhow::Result;
-use log::debug;
 
 mod cli;
 use cli::{cli, SetLogLevel};
@@ -11,7 +10,9 @@ mod tagedit;
 fn main() -> Result<()> {
     let args = cli()?;
 
-    SetLogLevel();
+    // let args = cli_dialog()?;
+
+    SetLogLevel(&args.loglevel)?;
 
     RenameFiles(&args.path, &args.file_type, &args.current, &args.new)?;
     // tagedit::read_tags("test/Ponveene.mp3")?;
