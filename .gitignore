@@ -1,1 +1,5 @@
 test/
+target/
+*.iml
+*.ipr
+*.idea/
