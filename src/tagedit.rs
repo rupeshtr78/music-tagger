@@ -2,7 +2,7 @@ use anyhow::{Context, Ok, Result};
 use id3::{Tag, TagLike, Version};
 use std::fs::{copy, File};
 
-pub fn read_tags(file_path: &str) -> Result<()> {
+pub fn GetTags(file_path: &str) -> Result<()> {
     let temp_file = std::env::temp_dir().join("music.mp3");
     copy(file_path, &temp_file)?;
 

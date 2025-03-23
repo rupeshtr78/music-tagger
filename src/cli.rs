@@ -8,14 +8,14 @@ pub struct CliArgs {
     pub file_type: String,
     pub current: String,
     pub new: String,
-    pub verbose: String,
+    pub loglevel: String,
 }
 
-pub fn cli_args() -> Result<CliArgs> {
+pub fn cli() -> Result<CliArgs> {
     let matches = Command::new("mp3-rename")
         .version("0.1.0")
         .author("Rupesh Raghavam <rupeshtr78@example.com>")
-        .about("Renames mp3 files in a directory based on new string");
+        .about("Renames files in a directory matching string");
     let matches = matches
         .arg(
             Arg::new("path")
@@ -50,49 +50,53 @@ pub fn cli_args() -> Result<CliArgs> {
                 .default_value(""),
         )
         .arg(
-            Arg::new("verbose")
-                .short('v')
-                .long("verbose")
-                .help("Print debug information verbosely")
-                .value_parser(["true", "false"]) // Allow only "true" or "false" as values
-                .default_value("false") // Default to "false" if the flag is not provided
+            Arg::new("loglevel")
+                .short('l')
+                .long("loglevel")
+                .help("Set log level")
+                .default_value("info") // Default to "false" if the flag is not provided
                 .action(clap::ArgAction::Set), // Allow the flag to take a value
         )
         .get_matches();
 
+    // Get the values of the arguments
     let path = matches
-        .try_get_one::<String>("path")
+        .get_one::<String>("path")
         .context("Failed to get path")?
-        .ok_or_else(|| anyhow::anyhow!("Failed to get path"))?;
+        .to_string();
     let file_type = matches
-        .try_get_one::<String>("file_type")
+        .get_one::<String>("file_type")
         .context("Failed to get file_type")?
-        .ok_or_else(|| anyhow::anyhow!("Failed to get file_type"))?;
+        .to_string();
     let current = matches
-        .try_get_one::<String>("current")
-        .context("Failed to get current")?
-        .ok_or_else(|| anyhow::anyhow!("Failed to get current"))?;
+        .get_one::<String>("current")
+        .context("Failed to get current string")?
+        .to_string();
     let new = matches
-        .try_get_one::<String>("new")
+        .get_one::<String>("new")
         .context("Failed to get new")?
-        .ok_or_else(|| anyhow::anyhow!("Failed to get new"))?;
-    let verbose = matches
-        .try_get_one::<String>("verbose")
-        .context("Failed to get verbose")?
-        .ok_or_else(|| anyhow::anyhow!("Failed to get verbose"))?;
+        .to_string();
+    let loglevel = matches
+        .get_one::<String>("loglevel")
+        .context("Failed to get loglevel")?
+        .to_string();
 
-    // let verbose = verbose
-    //     .parse::<bool>()
-    //     .with_context(|| "Failed to parse verbose")?;
-    let verbose = verbose == "false";
+    Ok(CliArgs {
+        path,
+        file_type,
+        current,
+        new,
+        loglevel,
+    })
+}
 
-    let args = CliArgs {
-        path: path.to_string(),
-        file_type: file_type.to_string(),
-        current: current.to_string(),
-        new: new.to_string(),
-        verbose: verbose.to_string(),
-    };
-
-    Ok(args)
+pub fn SetLogLevel() {
+    let args = cli().unwrap();
+    let level = args.loglevel.as_str();
+    match level {
+        "info" => simple_logger::init_with_level(log::Level::Info).unwrap(),
+        "debug" => simple_logger::init_with_level(log::Level::Debug).unwrap(),
+        "error" => simple_logger::init_with_level(log::Level::Error).unwrap(),
+        _ => simple_logger::init_with_level(log::Level::Warn).unwrap(),
+    }
 }

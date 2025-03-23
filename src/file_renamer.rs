@@ -1,9 +1,12 @@
+use ::regex::Regex;
 use anyhow::{Context, Result};
 use log::{debug, info, warn};
 use std::fs::read_dir;
 use std::fs::rename;
 
-pub fn rename_files(path: &str, file_type: &str, current: &str, new: &str) -> Result<()> {
+/// Rename files in a directory based on the new string
+///
+pub fn RenameFiles(path: &str, file_type: &str, current: &str, new: &str) -> Result<()> {
     let dir = read_dir(path).with_context(|| "Failed to read directory")?;
     for entry in dir {
         let entry = entry.context("Failed to read entry")?;
@@ -26,14 +29,24 @@ pub fn rename_files(path: &str, file_type: &str, current: &str, new: &str) -> Re
             continue;
         }
 
+        let re = Regex::new(current).with_context(|| "Failed to create regex")?;
+
         // regexp match a string and replace it with another string
-        if !file_name.contains(current) {
+
+        if !re.is_match(file_name) {
             warn!(
-                "File name does not contain current {} string: {}",
+                "File name does not match current {} string: {}",
                 current, file_name
             );
             continue;
         }
+        // if !file_name.contains(current) {
+        //     warn!(
+        //         "File name does not contain current {} string: {}",
+        //         current, file_name
+        //     );
+        //     continue;
+        // }
         let new_name = file_name.to_string().replace(current, new);
 
         info!("Renaming file: {} to {}", file_name, new_name);
@@ -75,7 +88,7 @@ mod tests {
         let file_names = ["file1.mp3", "file2.mp3", "file3.mp3"];
         let created_files = create_test_files(dir.path(), &file_names)?;
 
-        rename_files(dir.path().to_str().unwrap(), "mp3", "file", "new")?;
+        RenameFiles(dir.path().to_str().unwrap(), "mp3", "file", "new")?;
 
         for file in created_files {
             assert!(!(file).exists());
@@ -97,7 +110,7 @@ mod tests {
         let file_names = ["file1.mp3", "file2.mp3", "file3.mp3"];
         let created_files = create_test_files(dir.path(), &file_names)?;
 
-        rename_files(dir.path().to_str().unwrap(), "txt", "file", "new")?;
+        RenameFiles(dir.path().to_str().unwrap(), "txt", "file", "new")?;
 
         for file in created_files {
             assert!((file).exists());
@@ -114,7 +127,7 @@ mod tests {
         let file_names = ["no_rename1.mp3", "file2.mp3", "in_file_between.mp3"];
         let _created_files = create_test_files(dir.path(), &file_names).unwrap();
 
-        rename_files(dir.path().to_str().unwrap(), "mp3", "file", "new").unwrap();
+        RenameFiles(dir.path().to_str().unwrap(), "mp3", "file", "new").unwrap();
 
         assert!(dir.path().join("no_rename1.mp3").exists()); // should not be renamed
         assert!(dir.path().join("new2.mp3").exists());
@@ -130,7 +143,7 @@ mod tests {
         let file_names = ["file1.mp3", "file2.mp3", "file3.mp3"];
         let created_files = create_test_files(dir.path(), &file_names)?;
 
-        rename_files(dir.path().to_str().unwrap(), "mp3", "new", "new")?;
+        RenameFiles(dir.path().to_str().unwrap(), "mp3", "new", "new")?;
 
         for file in created_files {
             assert!((file).exists());
@@ -148,7 +161,7 @@ mod tests {
         let file_names = ["file1.mp3", "file2.mp3", "file3.mp3"];
         let created_files = create_test_files(dir.path(), &file_names)?;
 
-        let res = rename_files("invalid_path", "mp3", "file", "new");
+        let res = RenameFiles("invalid_path", "mp3", "file", "new");
         assert!(res.is_err());
 
         for file in created_files {
