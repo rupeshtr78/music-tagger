@@ -79,7 +79,7 @@ pub fn cli() -> Result<RenameCommandArgs> {
     }
 }
 
-fn cli_dialog() -> Result<RenameCommandArgs> {
+pub fn cli_dialog() -> Result<RenameCommandArgs> {
     let path = Input::new()
         .with_prompt("Enter the path to the directory containing files")
         .interact_text()?;

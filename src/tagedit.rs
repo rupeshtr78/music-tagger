@@ -43,3 +43,73 @@ pub fn GetTags(file_path: &str) -> Result<()> {
     new_tag.genre().map(|g| println!("  Genre: {}", g));
     Ok(())
 }
+
+use std::path::Path;
+
+#[derive(Debug)]
+pub struct TagEditArgs {
+    pub path: String,
+    pub album: Option<String>,
+    pub artist: Option<String>,
+    pub title: Option<String>,
+    pub genre: Option<String>,
+}
+
+pub fn EditTagsV2(args: &TagEditArgs) -> Result<()> {
+    let file_path = Path::new(&args.path);
+    let file_name = file_path
+        .file_name()
+        .unwrap_or(std::ffi::OsStr::new("music.mp3"))
+        .to_str()
+        .unwrap_or("music.mp3");
+
+    let temp_file = std::env::temp_dir().join(file_name);
+    copy(file_path, &temp_file)?;
+
+    let mut tag = Tag::read_from_path(&temp_file).context("Failed to read tags")?;
+
+    if let Some(album) = &args.album {
+        tag.set_album(album);
+    }
+    if let Some(artist) = &args.artist {
+        tag.set_artist(artist);
+    }
+    if let Some(title) = &args.title {
+        tag.set_title(title);
+    }
+    if let Some(genre) = &args.genre {
+        tag.set_genre(genre);
+    }
+
+    tag.write_to_path(&temp_file, Version::Id3v24)?;
+    copy(&temp_file, file_path)?;
+    std::fs::remove_file(temp_file)?;
+
+    Ok(())
+}
+
+// // Add to cli.rs
+// .arg(
+//     Arg::new("album")
+//         .long("album")
+//         .value_name("ALBUM")
+//         .help("Set album name")
+// )
+// .arg(
+//     Arg::new("artist")
+//         .long("artist")
+//         .value_name("ARTIST")
+//         .help("Set artist name")
+// )
+// .arg(
+//     Arg::new("title")
+//         .long("title")
+//         .value_name("TITLE")
+//         .help("Set song title")
+// )
+// .arg(
+//     Arg::new("genre")
+//         .long("genre")
+//         .value_name("GENRE")
+//         .help("Set genre")
+// )
