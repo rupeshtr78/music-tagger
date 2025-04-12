@@ -1,5 +1,6 @@
-use anyhow::{Context, Ok, Result};
+use anyhow::{anyhow, Context, Ok, Result};
 use id3::{Tag, TagLike, Version};
+use std::fs::read_dir;
 use std::fs::{copy, File};
 
 pub fn GetTags(file_path: &str) -> Result<()> {
@@ -48,6 +49,7 @@ use std::path::Path;
 
 #[derive(Debug)]
 pub struct TagEditArgs {
+    pub dir: Option<String>,
     pub path: String,
     pub album: Option<String>,
     pub artist: Option<String>,
@@ -55,13 +57,56 @@ pub struct TagEditArgs {
     pub genre: Option<String>,
 }
 
-pub fn EditTagsV2(args: &TagEditArgs) -> Result<()> {
+impl TagEditArgs {
+    pub fn new(dir: &str, path: &str, album: &str, artist: &str, title: &str, genre: &str) -> Self {
+        TagEditArgs {
+            dir: Some(dir.to_string()),
+            path: path.to_string(),
+            album: Some(album.to_string()),
+            artist: Some(artist.to_string()),
+            title: Some(title.to_string()),
+            genre: Some(genre.to_string()),
+        }
+    }
+
+    pub fn print_tags(&self) -> Result<()> {
+        // println!("After tag Update:");
+        let new_tag = Tag::read_from_path(&self.path).context("Failed to read tags")?;
+        println!("Tags: {}", &self.path);
+        new_tag.title().map(|t| println!("  Title: {}", t));
+        new_tag.artist().map(|a| println!("  Artist: {}", a));
+        new_tag.album().map(|a| println!("  Album: {}", a));
+        new_tag.genre().map(|g| println!("  Genre: {}", g));
+
+        Ok(())
+    }
+
+    // pub fn tag_all(&self) -> Result<()> {
+    //     if let Some(directory) = &self.dir {
+    //         let dir = read_dir(directory).with_context(|| "Failed to read directory")?;
+    //         for entry in dir {
+    //             let dir_entry = entry.context("Files to read file")?;
+    //             let file_path = dir_entry.path().to_str();
+    //             if let Some(file_path) = file_path {
+    //                 self.path = file_path
+    //             }
+
+    //     }
+
+    //     Ok(())
+    // }
+}
+
+pub fn EditTags(args: &TagEditArgs) -> Result<()> {
     let file_path = Path::new(&args.path);
+    if !file_path.exists() {
+        return Err(anyhow!("File does not exist"));
+    }
     let file_name = file_path
         .file_name()
-        .unwrap_or(std::ffi::OsStr::new("music.mp3"))
+        .context("Error getting filename")?
         .to_str()
-        .unwrap_or("music.mp3");
+        .context("Error converting filename to string")?;
 
     let temp_file = std::env::temp_dir().join(file_name);
     copy(file_path, &temp_file)?;
