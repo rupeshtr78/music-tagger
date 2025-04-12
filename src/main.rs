@@ -13,21 +13,16 @@ fn main() -> Result<()> {
     // let args = cli_dialog()?;
 
     // SetLogLevel(&args.loglevel)?;
+    SetLogLevel("debug")?;
 
     // RenameFiles(&args.path, &args.file_type, &args.current, &args.new)?;
     // tagedit::GetTags("test/Ponveene.mp3")?;
 
-    let tags = TagEditArgs::new(
-        "",
-        "test/Ponveene-rtr.mp3",
-        "Nirakoottu",
-        "Yesudas",
-        "Ponveene",
-        "Mal Film Song",
-    );
-    tagedit::EditTags(&tags).context("Error Editing Tags")?;
+    let tags = TagEditArgs::new("wav", "wholedir", "Yesudas", "Ponveene", "Mal Film Song");
+    // tagedit::EditTags("test/Ponveene-rtr.mp3", &tags).context("Error Editing Tags")?;
 
-    tags.print_tags().context("Error Printing tags")?;
+    tags.tag_all("test").context("Error updating tags")?;
+    tagedit::print_tags("test/ThalaivarTheme.wav").context("Error Printing tags")?;
 
     Ok(())
 }
