@@ -2,6 +2,7 @@
 use anyhow::Context;
 use anyhow::Result;
 use cli::SetLogLevel;
+use tagedit::TagEditArgs;
 mod cli;
 mod file_renamer;
 mod tagedit;
@@ -22,8 +23,11 @@ fn main() -> Result<()> {
     // // // tagedit::EditTags("test/Ponveene-rtr.mp3", &tags).context("Error Editing Tags")?;
 
     // All files in the directory
-    tags.tag_all("/data/UT/Music/1-LossLess/EltonJohn-wav")
-        .context("Error updating tags")?;
+    // tags.tag_all("/data/UT/Music/1-LossLess/EltonJohn-wav")
+    //     .context("Error updating tags")?;
+
+    TagEditArgs::show_tags("/data/UT/Music/1-LossLess/EltonJohn-wav")
+        .context("Error showing tags")?;
 
     // Single File Edit
     // tagedit::EditTags(
@@ -32,8 +36,8 @@ fn main() -> Result<()> {
     // )
     // .context("Error Editing Tags")?;
 
-    tagedit::print_tags("/data/UT/Music/1-LossLess/EltonJohn-wav/09 Blue Eyes.wav")
-        .context("Error Printing tags")?;
+    // tagedit::print_tags("/data/UT/Music/1-LossLess/EltonJohn-wav/09 Blue Eyes.wav")
+    //     .context("Error Printing tags")?;
 
     Ok(())
 }

@@ -51,6 +51,19 @@ impl TagEditArgs {
 
         Ok(())
     }
+
+    pub fn show_tags(dir_path: &str) -> Result<()> {
+        let dir = read_dir(dir_path).with_context(|| "Failed to read directory")?;
+        for entry in dir {
+            let entry = entry.with_context(|| "Failed to read entry")?;
+            let file_path = entry.path();
+            if file_path.is_file() {
+                print_tags(file_path.to_str().unwrap()).with_context(|| "Failed to print tags")?;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 pub fn EditTags(path: &str, args: &TagEditArgs) -> Result<()> {
@@ -130,10 +143,6 @@ pub fn print_tags(path: &str) -> Result<()> {
     // println!("After tag Update:");
     let tag = Tag::read_from_path(path).context("Error reading tags")?;
 
-    // let tag_result = id3::partial_tag_ok(tag_result);
-
-    // let tag_result = id3::no_tag_ok(tag_result).context("Error reading tags")?;
-
     if let Some(t) = tag.title() {
         println!("  Title: {}", t)
     }
@@ -146,6 +155,8 @@ pub fn print_tags(path: &str) -> Result<()> {
     if let Some(g) = tag.genre() {
         println!("  Genre: {}", g)
     }
+
+    // tag.pictures()
 
     Ok(())
 }
