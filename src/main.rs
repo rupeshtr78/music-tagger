@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
-use ::anyhow::Context;
+use anyhow::Context;
 use anyhow::Result;
-use cli::{cli, cli_dialog, SetLogLevel};
-use tagedit::TagEditArgs;
+use cli::SetLogLevel;
 mod cli;
 mod file_renamer;
 mod tagedit;
@@ -18,11 +17,23 @@ fn main() -> Result<()> {
     // RenameFiles(&args.path, &args.file_type, &args.current, &args.new)?;
     // tagedit::GetTags("test/Ponveene.mp3")?;
 
-    let tags = TagEditArgs::new("wav", "wholedir", "Yesudas", "Ponveene", "Mal Film Song");
-    // tagedit::EditTags("test/Ponveene-rtr.mp3", &tags).context("Error Editing Tags")?;
+    let tags =
+        tagedit::TagEditArgs::new("wav", "Elton John Hits", "Elton John", "filename", "Blues");
+    // // // tagedit::EditTags("test/Ponveene-rtr.mp3", &tags).context("Error Editing Tags")?;
 
-    tags.tag_all("test").context("Error updating tags")?;
-    tagedit::print_tags("test/ThalaivarTheme.wav").context("Error Printing tags")?;
+    // All files in the directory
+    tags.tag_all("/data/UT/Music/1-LossLess/EltonJohn-wav")
+        .context("Error updating tags")?;
+
+    // Single File Edit
+    // tagedit::EditTags(
+    //     "/data/UT/Music/1-LossLess/EltonJohn-wav/03 Sacrifice.wav",
+    //     &tags,
+    // )
+    // .context("Error Editing Tags")?;
+
+    tagedit::print_tags("/data/UT/Music/1-LossLess/EltonJohn-wav/09 Blue Eyes.wav")
+        .context("Error Printing tags")?;
 
     Ok(())
 }

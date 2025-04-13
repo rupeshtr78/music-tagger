@@ -33,7 +33,7 @@ impl TagEditArgs {
             if file_path.is_file() {
                 let file_extension = file_path.extension();
                 // skip files check for valid file extension
-                if file_extension != Some(&self.file_type.as_ref()) {
+                if file_extension != Some(self.file_type.as_ref()) {
                     if let Some(file_path) = file_path.to_str() {
                         debug!(
                             "Skipping File : {:?} file type does not match {:?}",
@@ -44,7 +44,7 @@ impl TagEditArgs {
                 }
                 // Update tags
                 if let Some(file_path) = file_path.to_str() {
-                    EditTags(file_path, &self)?;
+                    EditTags(file_path, self)?;
                 }
             }
         }
@@ -67,7 +67,25 @@ pub fn EditTags(path: &str, args: &TagEditArgs) -> Result<()> {
     let temp_file = std::env::temp_dir().join(file_name);
     copy(file_path, &temp_file)?;
 
-    let mut tag = Tag::read_from_path(&temp_file).context("Failed to read tags")?;
+    let tag_result: std::result::Result<Tag, id3::Error> = Tag::read_from_path(&temp_file);
+
+    let mut tag = match tag_result {
+        std::result::Result::Ok(tag) => {
+            debug!("Tag found for file: {}", file_name);
+            tag
+        }
+        Err(id3::Error {
+            kind: id3::ErrorKind::NoTag,
+            ..
+        }) => {
+            debug!("NO tag found for file: {:?}", file_name);
+            Tag::new()
+        }
+        Err(e) => {
+            debug!("No tag found for file: {:?}. Error: {:?}", file_name, e);
+            Tag::new()
+        }
+    };
 
     if let Some(album) = &args.album {
         tag.set_album(album);
@@ -75,13 +93,31 @@ pub fn EditTags(path: &str, args: &TagEditArgs) -> Result<()> {
     if let Some(artist) = &args.artist {
         tag.set_artist(artist);
     }
-    if let Some(title) = &args.title {
-        tag.set_title(title);
+
+    match &args.title {
+        Some(title) if title == "keep" => {
+            if let Some(current_title) = tag.title() {
+                debug!("Keeping current title: {}", current_title);
+            } else {
+                debug!("No existing title found. Skipping title update.");
+            }
+        }
+        Some(title) if title == "filename" => {
+            if let Some(stem) = file_path.file_stem() {
+                if let Some(no_ext_name) = stem.to_str() {
+                    tag.set_title(no_ext_name);
+                }
+            }
+        }
+        Some(title) => {
+            tag.set_title(title);
+        }
+        None => {}
     }
+
     if let Some(genre) = &args.genre {
         tag.set_genre(genre);
     }
-
     tag.write_to_path(&temp_file, Version::Id3v24)?;
     copy(&temp_file, file_path)?;
     std::fs::remove_file(temp_file)?;
@@ -90,13 +126,26 @@ pub fn EditTags(path: &str, args: &TagEditArgs) -> Result<()> {
 }
 
 pub fn print_tags(path: &str) -> Result<()> {
+    println!("Tags for File: {}", path);
     // println!("After tag Update:");
-    let new_tag = Tag::read_from_path(path).context("Failed to read tags")?;
-    println!("Tags: {}", path);
-    new_tag.title().map(|t| println!("  Title: {}", t));
-    new_tag.artist().map(|a| println!("  Artist: {}", a));
-    new_tag.album().map(|a| println!("  Album: {}", a));
-    new_tag.genre().map(|g| println!("  Genre: {}", g));
+    let tag = Tag::read_from_path(path).context("Error reading tags")?;
+
+    // let tag_result = id3::partial_tag_ok(tag_result);
+
+    // let tag_result = id3::no_tag_ok(tag_result).context("Error reading tags")?;
+
+    if let Some(t) = tag.title() {
+        println!("  Title: {}", t)
+    }
+    if let Some(a) = tag.artist() {
+        println!("  Artist: {}", a)
+    }
+    if let Some(a) = tag.album() {
+        println!("  Album: {}", a)
+    }
+    if let Some(g) = tag.genre() {
+        println!("  Genre: {}", g)
+    }
 
     Ok(())
 }
