@@ -74,12 +74,12 @@ pub fn cli() -> Result<RenameCommandArgs> {
         .context("Failed to parse interactive flag")?;
 
     match interactive {
-        true => cli_dialog(),
+        true => cli_rename(),
         false => cli_commands(matches),
     }
 }
 
-pub fn cli_dialog() -> Result<RenameCommandArgs> {
+pub fn cli_rename() -> Result<RenameCommandArgs> {
     let path = Input::new()
         .with_prompt("Enter the path to the directory containing files")
         .interact_text()?;
